@@ -1,0 +1,197 @@
+
+#---------------------------------------------------------------------------
+# bounding box
+#---------------------------------------------------------------------------
+
+# ----------
+1. original coco
+
+  xmin, ymin, width, height
+  
+
+# ----------
+2-1. yolox.data.datasets : coco.py  class COCODataset  __init__  (load_anno_from_ids())
+
+  iscrowd = False
+  xmin, ymin, xmax, ymax  (all values > 0, xmax > xmin, ymax > ymin) --> resized
+
+
+# ----------
+2-2. yolox.data.datasets : coco.py  class COCODataset  pull_item()
+
+  return is:  resized image / label (bbox, class) / origin image size / image id
+
+  image:  resized
+  bounxing box:  already resized (xmin, ymin, xmax, ymax)
+
+
+# ----------
+2-3. yolox.data.datasets : coco.py  class COCODataset  __getitem__()
+
+  if set preproc (= TrainTransform), preproc is applied in training
+
+  # ----------
+  yolox.data : data_augment.py  class TrainTransform
+
+  	return is:
+  	   transformed image (3, 640, 640)
+  	   target (max_labels, 5)  (5 = class lable, cx, cy, w, h)
+  	   img_info (origin image size)
+  	   img_id
+
+# ----------
+3-1. MosaicDetection  yolox.exp : yolox_base.py  get_data_loader()  -->  dataset.__getitem__()
+
+     only MosaicDetection(dataset=COCODataset) does not augment mosaic (but same as COCODataset)
+
+  	return is:
+  	   transformed image (3, 640, 640)
+  	   target (max_labels, 5)  (5 = class lable, cx, cy, w, h)
+  	   img_info (origin image size)
+  	   img_id
+
+  ### NOTE THAT mosaic + mixup augmentation requires YoloBatchSampler !!!!
+
+
+# ----------
+3-2. MosaicDetection  into  YoloBatchSampler in data loader  (YoloBatchSample returns bool for mosaic)
+
+
+yolox.data.datasets : datasets_wrapper.py
+
+@staticmethod
+def mosaic_getitem(getitem_fn):
+
+--> index[0] is mosaic bool
+    index[1] is image id
+
+--> this is applied in @Dataset.mosaic_getitem in MosaicDetection (yolox.data.datasets : data_augment.py)
+
+
+
+#---------------------------------------------------------------------------
+# COCO data volume and training load
+#---------------------------------------------------------------------------
+
+### train2017
+
+images:		118,827 images
+
+annotations:		860,0001 annotations  -->  excluding iscrowd = True  849,949 annotations
+
+average annotations per image:  7.15 annotations
+
+classes:		80
+
+training time:		almost 7 days,  300 epochs  -->  almost 30 min / epoch
+
+
+#---------------------------------------------------------------------------
+# IDEA from Open Images Challenge
+#---------------------------------------------------------------------------
+
+# ----------
+1.  hierarchical tag system,  ambiguous categories
+
+- distributed soft max loss by exploiting category relationship to replace the standard softmax loss
+  label with k non-zero elements each set to 1/k corresponding to the k >= 1
+
+
+# ----------
+2.  missed annotations
+
+- weakly supervised scenario with label noise
+
+
+# ----------
+3.  severe data imbalance
+
+- class-aware sampling (but overfitting) --> to alleviate overfitting, auto augmentation on both image-level and box-level data
+
+- expert model:
+   - concentrated to a expert subset
+   - useful to increase the recall of rare categories (but tends to bring more false positives)
+   - to solve the unwanted false positives:
+       - confusion matrix  --> added into training set
+       - multiple expert models overlapping expert subsets  -->  overlapped categories is considered as final results
+       - train a classifier to re-weight the confidence of detected bboxes by multiple the detector score and classifier score
+
+   - select subcategories to which an expert model is trained
+       - occurrence ranking
+       - semantic similarity of categories
+          - cluster categories based on their similarity of embeddings by an imagenet pretrained feature extractor
+            ('Factors in finetuning deep model for object detection' CVPR 2016)
+
+
+# ----------
+4.  ensemble:  normal model + expert models
+   - re-weight each categories model by model according to its mAP on validation set
+   - search optimal NMS threshold for different categories
+
+
+# ----------
+5.  improve recall
+   - SoftNMS
+   - top-k voting nms
+   
+   
+   
+#---------------------------------------------------------------------------
+# awesome YOLO
+#---------------------------------------------------------------------------
+
+
+https://github.com/sjinzh/awesome-yolo-object-detection#mxnet-implementation
+
+
+#---------------------------------------------------------------------------
+# object detection metrics
+#---------------------------------------------------------------------------
+
+https://cocodataset.org/#detection-eval
+
+https://github.com/rafaelpadilla/Object-Detection-Metrics
+
+https://pyimagesearch.com/2022/05/02/mean-average-precision-map-using-the-coco-evaluator/
+
+https://storage.googleapis.com/openimages/web/evaluation.html#object_detection_eval
+
+
+#---------------------------------------------------------------------------
+# yolo and darknet
+#---------------------------------------------------------------------------
+
+https://github.com/AlexeyAB/darknet
+
+https://alexeyab84.medium.com/scaled-yolo-v4-is-the-best-neural-network-for-object-detection-on-ms-coco-dataset-39dfa22fa982
+
+
+#---------------------------------------------------------------------------
+# kaggle:
+# image object localization challenge
+#---------------------------------------------------------------------------
+
+https://www.kaggle.com/c/imagenet-object-localization-challenge#evaluation
+
+# --> new evaluation metrics:
+https://www.kaggle.com/competitions/imagenet-object-localization-challenge/overview/evaluation
+
+
+
+#---------------------------------------------------------------------------
+# Open Images Challenge 2018
+#---------------------------------------------------------------------------
+
+https://storage.googleapis.com/openimages/web/challenge.html
+
+https://www.kaggle.com/c/google-ai-open-images-visual-relationship-track
+
+
+#---------------------------------------------------------------------------
+# Open Images Dataset (OID) V7
+#---------------------------------------------------------------------------
+
+https://storage.googleapis.com/openimages/web/factsfigures_v7.html
+
+
+

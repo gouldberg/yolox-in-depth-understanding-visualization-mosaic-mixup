@@ -158,3 +158,9 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# data
+00_vis_mosaicmixup_640640_default/
+00_vis_mosaicmixup_640640_revise/
+00_vis_res/
+00_yolox_s_model/
