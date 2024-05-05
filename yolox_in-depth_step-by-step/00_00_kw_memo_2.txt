@@ -1,0 +1,65 @@
+
+#---------------------------------------------------------------------------
+# train
+#---------------------------------------------------------------------------
+
+yolox.models.yolo_head YOLOXHead forward
+
+# ----------
+1.  for all fpn_out
+
+output = torch.cat([reg_output, obj_output, cls_output], 1)
+
+--> output, x_shifts, y_shifts, expanded_strides, 
+
+--> outputs
+
+
+# ----------
+2.  get losses
+
+get assignments (get geometry constraint  -->  cost  -->  simOTA matching)
+
+--> calc loss
+
+
+#---------------------------------------------------------------------------
+# visual assign
+#---------------------------------------------------------------------------
+
+yolox.models.yolo_head YOLOXHead forward
+
+# ----------
+1.  for all fpn_out
+
+output = torch.cat([reg_output, obj_output, cls_output], 1)
+
+--> output, x_shifts, y_shifts, expanded_strides, 
+
+--> outputs
+
+
+# ----------
+2.  get assignments
+
+get assignments (get geometry constraint  -->  cost  -->  simOTA matching)
+
+
+#---------------------------------------------------------------------------
+# eval
+#---------------------------------------------------------------------------
+
+yolox.models.yolo_head YOLOXHead forward
+
+
+# ----------
+1.  for all fpn_out
+
+output = torch.cat([reg_output, obj_output.sigmoid(), cls_output.sigmoid()], 1)
+
+--> outputs
+
+
+# ----------
+2.  decode_ouput
+
